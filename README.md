@@ -5,7 +5,7 @@ This is an MVP of an interoperability harness. In this case it tests a piece of 
 This harness consists of four containers that run together:
 * A container that runs a mock TAK server gateway that recieves the CoT messages from **adsbcot**.
 * A container that runs a mock ADS-B server that transmits ADS-B messages to **adsbcot**.
-* A container that runs a CoT message validator that reports whether the CoT message received pass basic CoT message format checks.
+* A container that runs a CoT message validator that reports whether the CoT messages received pass basic CoT message format checks.
 * A container that run the **adsbcot** software.
 
 ### Instructions:
