@@ -1,6 +1,6 @@
 # VIPR-MVP
 ### Concept:
-This is an MVP of an interoperability harness. In this case it tests a piece of software called [**adsbcot**](https://github.com/ampledata/adsbcot) that can recieve raw [ADS-B](https://mode-s.org/decode/content/ads-b/1-basics.html) messages across the network and translate them into CoT messages.
+This is an MVP of an interoperability harness. In this case it tests a piece of software called [**adsbcot**](https://github.com/ampledata/adsbcot) that can receive raw [ADS-B](https://mode-s.org/decode/content/ads-b/1-basics.html) messages across the network and translate them into CoT messages.
 
 This harness consists of four containers that run together:
 * A container that runs a mock TAK server gateway that recieves the CoT messages from **adsbcot**.
