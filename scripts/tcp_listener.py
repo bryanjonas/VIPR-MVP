@@ -1,6 +1,7 @@
 import socket 
 import sys
 import argparse
+import select
 
 def build_srv(ip_addr, port):
     addr_info = socket.getaddrinfo(ip_addr, port, type=socket.SOCK_STREAM)
@@ -18,12 +19,19 @@ def main(argv):
 
     sock = build_srv(ip_addr, args.port)
     
+    inputs = [ sock ]
+    outputs = []
+    
     while True:
-        pass
+        readable, writeable, exceptional = select.select(inputs, outputs, inputs)
+
+        for s in readable:
+            if s is sock:
+                connection, client_address = s.accept()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-l", "--host", help="host to bind socket to", default='localhost')
+    parser.add_argument("-l", "--host", help="host to bind socket to", default='0.0.0.0')
     parser.add_argument("-p", "--port", help="port to bind socket to", type=int)
     try:
         args = parser.parse_args()

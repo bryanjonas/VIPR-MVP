@@ -6,9 +6,11 @@ import validators
 import docker
 
 class System():
-    def __init__(self, name, repo):
+    def __init__(self, name, repo, image):
         self.name = name
         self.repo = repo
+        self.image = image
+        self.container = None
 
 class External_Service():
     def __init__(self, name, type):
@@ -109,7 +111,8 @@ def parse_config(config_dict):
     #Build system class
     system = System(
         name = config_dict['system']['name'], 
-        repo = config_dict['system']['repo']
+        repo = config_dict['system']['repo'],
+        image = config_dict['system']['image']
         )
 
 
@@ -167,32 +170,49 @@ def parse_config(config_dict):
 
 def start_service(service, client, docker_network_name):
     script_dict = {'tcp':'tcp_listener'}
-    #serv_command = 'python -u /vipr/scripts/' + script_dict[service.type] + '.py --port ' + str(service.port)
-    serv_command = 'ls /vipr'
-    serv_name = 'vipr-' + service.name
-    print(os.getcwd())
-    print(serv_name)
+    serv_command = 'python -u /vipr/scripts/' + script_dict[service.type] + '.py --port ' + str(service.port)
+    port_map_dict = {service.port: service.port}
     container = client.containers.run(image = 'python:3.6-slim-buster',
                 volumes = {'/vipr': {'bind': '/vipr', 'mode': 'ro'}},
-                name = serv_name,
+                name = service.name,
                 command = serv_command,
-                #detach = True,
+                ports = port_map_dict,
+                detach = True,
                 network = docker_network_name,
-                #auto_remove = True
+                auto_remove = True
     )
+    print('Started service: ', service.name)
     service.container = container
+
+def start_system(system, client, project_path, docker_network_name):
+    ###CHANGE TO PROJECT_PATH'S startup.sh###
+    sys_command = '/vipr/test/startup.sh'
+    container = client.containers.run(image = system.image,
+                name = system.name,
+                detach = True,
+                #auto_remove = True,
+                network = docker_network_name,
+                volumes = {project_path: {'bind': '/system', 'mode': 'rw'},
+                           '/vipr': {'bind': '/vipr', 'mode': 'ro'}},###REMOVE THIS###
+                command = sys_command
+                )
+    print('Started system: ', system.name)
+    system.container = container
 
 
 def main(args):
-    client = docker.DockerClient(base_url='unix://var/run/docker.sock')
+    #client = docker.DockerClient(base_url='unix://var/run/docker.sock')
+    client = docker.from_env()
+
     project_name = args.repo.split('/')[-1]
 
     os.chdir("/")
     #This is going to eventually give me fits because of authentication
     os.system('git clone ' + args.repo)
+    project_path = os.path.join('/', project_name)
+    config_paths = [os.path.join(project_path,  'vipr/config.yaml'),
+                    os.path.join(project_path,  'vipr/config.yml')]
 
-    config_paths = [os.path.join('/', project_name,  'vipr/config.yaml'),
-                    os.path.join('/',  project_name,  'vipr/config.yml')]
     if not os.path.exists(config_paths[0]):
         config_path = config_paths[1]
         if not os.path.exists(config_path):
@@ -201,23 +221,33 @@ def main(args):
     else:
         config_path = config_paths[0]
 
-
     with open(config_path) as f:
         config_dict = yaml.load(f, Loader=yaml.FullLoader)
-    
+    print('Loaded repo config file.')
+
     system, services, outputs = parse_config(config_dict)
+    print('Parsed repo config file.')
 
     docker_network_name = system.name + '-net'
     try:
         client.networks.create(docker_network_name, check_duplicate=True)
     except:
         pass
-
+    print('Created container network.')
+    print('Starting external service container(s).')
     for service in services:
         start_service(service, client, docker_network_name)
+    print('Starting system container.')
 
-    #while True:
-    #    pass
+    start_system(system, client, project_path, docker_network_name)
+
+
+    
+    #for service in services:
+    #    service.container.kill()
+    #    print('Killed service: ', service.name)
+    while True:
+        pass
 
 
 if __name__ == "__main__":

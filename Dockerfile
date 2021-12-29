@@ -1,12 +1,16 @@
-from python:3.6-slim-buster
+FROM docker:dind
 
-RUN apt update && \
-    apt install -y --no-install-recommends git
+RUN apk update && apk add docker
 
-RUN pip3 install docker
+# Install python/pip
+ENV PYTHONUNBUFFERED=1
+
+RUN apk add --update --no-cache git python3 && ln -sf python3 /usr/bin/python
+
+RUN python3 -m ensurepip
+
+RUN pip3 install --no-cache --upgrade pip setuptools docker
 
 COPY ./requirements.txt /
 
 RUN pip3 install -r /requirements.txt
-
-CMD "/bin/bash"
