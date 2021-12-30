@@ -2,6 +2,7 @@ import socket
 import sys
 import argparse
 import select
+import time
 
 def build_srv(ip_addr, port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -32,6 +33,7 @@ def main(args):
             if s is sock:
                 connection, client_address = s.accept()
                 print('Connection from ', client_address)
+                time.sleep(10)
                 for line in payload_list:
                     connection.sendall(line)
                     print('Sent: ', line)

@@ -244,7 +244,7 @@ def start_tcp_server(stimulus, client, project_path, docker_network_name):
                 ports = port_map_dict,
                 detach = True,
                 network = docker_network_name,
-                auto_remove = True
+                #auto_remove = True
     )
     i=0
     while container.status != 'running':
@@ -269,7 +269,7 @@ def start_output_server(recipient, client, project_path, docker_network_name):
                 ports = port_map_dict,
                 detach = True,
                 network = docker_network_name,
-                auto_remove = True
+                #auto_remove = True
     )
     i=0
     while container.status != 'running':
@@ -308,6 +308,30 @@ def start_tshark(client, project_path, docker_network_name):
             exit()
     print('Started tshark service.')
     return container
+
+def start_analysis_service(type, client, project_path):
+    cmd_dict = {'cot-file': 'sh -c "pip3 install -r /vipr/requirements/cot_file.txt && python -u /vipr/scripts/cot_file.py -p' + project_path + '"',
+                'cot-pcap': 'sh -c "pip3 install -r /vipr/requirements/cot_pcap.txt && python -u /vipr/scripts/cot_pcap.py -p' + project_path + '"'}
+    container = client.containers.run(image = 'python:3.6-slim-buster',
+                volumes = {'/vipr': {'bind': '/vipr', 'mode': 'ro'},
+                            project_path: {'bind': project_path, 'mode': 'rw'}},
+                name = type,
+                command = cmd_dict[type],
+                #auto_remove = True,
+                detach = True
+    )
+    i=0
+    while container.status != 'running':
+        container.reload()
+        time.sleep(1)
+        i+=1
+        if i >= 30:
+            print('Error starting analysis service: ', type)
+            exit()
+    print('Started analysis service: ', type)
+    return container
+
+
 
 
 def main(args):
@@ -354,18 +378,12 @@ def main(args):
             if stimulus.type == 'tcp':
                 start_tcp_server(stimulus, client, project_path, docker_network_name)
         for recipient in output.recipients:
-            if recipient.type == 'tcp':
+            if recipient.type == 'tcp': ### Add more flexibility in this ###
                 start_output_server(recipient, client, project_path, docker_network_name)
 
     ###Remove output PCAP file for testing re-runs
     try:
         os.remove(os.path.join(project_path, 'vipr/outputs/output.pcap'))
-    except:
-        pass
-    try:
-        for file in os.listdir('/vipr/adsbcot'):
-            os.remove(os.path.join('/vipr/adsbcot/', file))
-        os.rmdir('/vipr/adsbcot/')
     except:
         pass
     ###
@@ -376,10 +394,10 @@ def main(args):
     print('Starting system container.')
     start_system(system, client, project_path, docker_network_name)
 
-    print('Waiting for task completion.')
+    print('Waiting for validation task completion.')
     time.sleep(system.waittime)
-    while True:
-        pass
+
+    #Starting killing services
     for output in outputs:
         for stimulus in output.stimuli:
             stimulus.container.kill()
@@ -394,6 +412,20 @@ def main(args):
     tshark_cont.kill()
     print('Killed tshark container.')
 
+    print('Starting analysis service.')
+    #Start analysis
+    for output in outputs:
+        if output.type == 'cot':
+            #File analysis
+            start_analysis_service('cot-file', client, project_path)
+            #PCAP analysis
+            #start_analysis_service('cot-pcap', client, project_path)
+
+    ### Subsitute for a file exists check for the validation results
+    time.sleep(30)
+
+    #while True:
+    #    pass
     #Copy test files from orchestrator container to VIPR directory on host
     from_path = os.path.join(project_path + '/vipr')
     to_path = os.path.join('/vipr', project_name)

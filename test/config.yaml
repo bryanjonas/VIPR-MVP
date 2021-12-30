@@ -2,7 +2,7 @@ system:
   name: adsbcot
   repo: https://github.com/bryanjonas/adsbcot
   image: python:3.6-slim-buster
-  waittime: 10
+  waittime: 60
 
 external-services:
   adsb:

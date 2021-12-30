@@ -32,12 +32,13 @@ def main(args):
             if s is sock:
                 connection, client_address = s.accept()
                 while True:
-                    data = connection.recv(65565)
-                    if len(data) == 0: 
-                        break
-                    file_name = os.path.join(project_path, '/outputs/', vipr-' + time.time() + '.xml')
-                    open(file_path).write(data).close()
-                connection.close()
+                    data = connection.recv(1049)
+                    #if len(data) == 0: 
+                    #    break
+                    file_path = os.path.join(project_path, 'vipr/outputs/', 'vipr-' + str(time.time()))
+                    open(file_path, 'wb').write(data)
+                    print('Wrote CoT file at: ', file_path)
+                #connection.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
