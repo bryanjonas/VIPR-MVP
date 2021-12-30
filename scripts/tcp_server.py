@@ -2,26 +2,26 @@ import socket
 import sys
 import argparse
 import select
-import time
-import os
 
 def build_srv(ip_addr, port):
-    addr_info = socket.getaddrinfo(ip_addr, port, type=socket.SOCK_STREAM)
-    (sock_fam, _, _, _, bind_args) = addr_info[0]
-
-    sock = socket.socket(sock_fam, socket.SOCK_STREAM)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.bind(bind_args)
+    sock.bind((ip_addr, port))
     sock.listen(1)
 
     return sock
 
-def main(args):  
-    project_path = args.project_path
-    ip_addr = socket.gethostbyname(args.host)
+def main(args): 
 
+    ip_addr = socket.gethostbyname(args.host)
     sock = build_srv(ip_addr, args.port)
-    
+    payload_list = []
+    with open(args.file, 'rb') as f:
+        for line in f.readlines():
+            payload_list.append(line)
+
+    print('Payload: ', payload_list)
+
     inputs = [ sock ]
     outputs = []
     
@@ -31,19 +31,18 @@ def main(args):
         for s in readable:
             if s is sock:
                 connection, client_address = s.accept()
-                while True:
-                    data = connection.recv(65565)
-                    if len(data) == 0: 
-                        break
-                    file_name = os.path.join(project_path, '/outputs/', vipr-' + time.time() + '.xml')
-                    open(file_path).write(data).close()
+                print('Connection from ', client_address)
+                for line in payload_list:
+                    connection.sendall(line)
+                    print('Sent: ', line)
                 connection.close()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--host", help="host to bind socket to", default='0.0.0.0')
     parser.add_argument("-p", "--port", help="port to bind socket to", type=int)
-    parser.add_argument("-f", "--project_path", help="path for system project")
+    parser.add_argument("-f", "--file", help="File containing newline-deliminated payloads", required=True)
     try:
         args = parser.parse_args()
     except:
