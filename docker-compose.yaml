@@ -1,0 +1,11 @@
+version: '3.5'
+
+services:
+  orchestrator:
+    build: .
+    container_name: orchestrator
+    runtime: sysbox-runc
+    env_file:
+      - ./.env
+    volumes:
+      - ./:/vipr/

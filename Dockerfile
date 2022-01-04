@@ -1,12 +1,16 @@
-from python:3.6-slim-buster
+FROM docker:dind
 
-RUN pip3 install pymodes pycot pytak python-dateutil lxml
+RUN apk update && apk add docker 
 
-RUN apt update && \
-    apt install -y --no-install-recommends git
+# Install python/pip
+ENV PYTHONUNBUFFERED=1
 
-RUN git clone https://github.com/ampledata/adsbcot.git && \
-    cd adsbcot/ && \
-    python setup.py install
+RUN apk add --update --no-cache git python3 && ln -sf python3 /usr/bin/python
 
-CMD "/bin/bash"
+RUN python3 -m ensurepip
+
+RUN pip3 install --no-cache --upgrade pip setuptools docker iptables
+
+COPY ./requirements.txt /
+
+RUN pip3 install -r /requirements.txt

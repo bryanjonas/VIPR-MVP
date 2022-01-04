@@ -1,5 +1,4 @@
 from lxml import etree as ET
-import os
 import re
 
 def validate_xml(xml):
@@ -116,22 +115,3 @@ def elements_under_detail(xml_root):
             return True
     else:
         return False
-
-def main():
-    complete_files_list = []
-    out_folder = "/vipr/CoT-out"
-    while True:
-        for file in os.listdir(out_folder):
-            if file != '.gitkeep':
-                if not file in complete_files_list:
-                    file_path = os.path.join(out_folder, file)
-                    with open(file_path) as f:
-                        xml = f.readlines()
-                    if validate_xml(xml[0]):
-                        print('Validated CoT Message: ', file)
-                    else:
-                        print('CoT Message Invalid: ', file)
-                complete_files_list.append(file)
-
-if __name__ == "__main__":
-    main()
